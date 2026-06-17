@@ -3,7 +3,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { CampaignList } from "@/components/campaigns/campaign-list";
-import { campaigns } from "@/data/campaigns";
 
 export const metadata = {
   title: "Campaigns — Phishified",
@@ -25,7 +24,7 @@ export default function CampaignsPage() {
         }
       />
 
-      <CampaignList campaigns={campaigns} />
+      <CampaignList />
     </div>
   );
 }

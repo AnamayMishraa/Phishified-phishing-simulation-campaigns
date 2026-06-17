@@ -1,7 +1,9 @@
+from datetime import timedelta
+
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-SECRET_KEY = "django-insecure-change-me"
+SECRET_KEY = "django-insecure-change-me-to-a-long-secret-key-min-32-bytes"
 DEBUG = False
 ALLOWED_HOSTS: list[str] = []
 ROOT_URLCONF = "config.urls"
@@ -33,6 +35,7 @@ INSTALLED_APPS = [
     "apps.reports",
     "apps.audit",
     "apps.notifications",
+    "apps.dashboard",
 ]
 
 MIDDLEWARE = [
@@ -102,8 +105,8 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": None,
-    "REFRESH_TOKEN_LIFETIME": None,
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(hours=24),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),

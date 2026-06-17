@@ -60,6 +60,7 @@ class Campaign(models.Model):
         related_name="created_campaigns",
     )
     scheduled_date = models.DateTimeField(null=True, blank=True)
+    launched_at = models.DateTimeField(null=True, blank=True)
     completed_date = models.DateTimeField(null=True, blank=True)
     sent_count = models.PositiveIntegerField(default=0)
     open_count = models.PositiveIntegerField(default=0)

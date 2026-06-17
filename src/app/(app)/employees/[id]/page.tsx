@@ -1,58 +1,125 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Mail, MousePointerClick, Check, X, TrendingUp, TrendingDown, Minus, Calendar, Building2, Briefcase } from "lucide-react";
-import { employees, getRiskLevel, getEmployeeCampaignHistory, getEmployeeTrainingProgress, getEmployeeRiskAssessment } from "@/data/employees";
+import { api, ApiError } from "@/lib/api/client";
+import type { EmployeeDetail, EmployeeRiskSnapshot } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
-export function generateStaticParams() {
-  return employees.map((e) => ({ id: String(e.id) }));
-}
-
-export function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
-  return { title: "Employee — Phishified" };
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
-const outcomeBadge: Record<string, { label: string; color: string }> = {
-  Passed: { label: "Passed", color: "text-status-success bg-status-success/10 border-status-success/20" },
-  Clicked: { label: "Clicked", color: "text-status-danger bg-status-danger/10 border-status-danger/20" },
-  Submitted: { label: "Submitted", color: "text-status-warning bg-status-warning/10 border-status-warning/20" },
+const riskLevelLabels: Record<string, string> = {
+  secure: "Secure",
+  medium: "Medium Risk",
+  high: "High Risk",
 };
 
-export default async function EmployeeDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const employee = employees.find((e) => String(e.id) === id);
+const riskColors: Record<string, string> = {
+  "High Risk": "text-status-danger bg-status-danger/10 border-status-danger/20",
+  "Medium Risk": "text-status-warning bg-status-warning/10 border-status-warning/20",
+  Secure: "text-status-success bg-status-success/10 border-status-success/20",
+};
 
-  if (!employee) {
-    notFound();
+function getInitials(first: string, last: string): string {
+  return (first[0] ?? "" + (last[0] ?? "")).toUpperCase().slice(0, 2);
+}
+
+export default function EmployeeDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const [employee, setEmployee] = useState<EmployeeDetail | null>(null);
+  const [snapshot, setSnapshot] = useState<EmployeeRiskSnapshot | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    Promise.all([
+      api<EmployeeDetail>(`/employees/${id}/`),
+      api<{ results: EmployeeRiskSnapshot[] }>(`/employees/${id}/risk-snapshots/`).catch(() => ({ results: [] })),
+    ])
+      .then(([emp, snapData]) => {
+        if (!cancelled) {
+          setEmployee(emp);
+          setSnapshot(snapData.results[0] ?? null);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(err instanceof ApiError ? String(err.body ?? err.message) : "Failed to load employee");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center gap-4">
+          <div className="size-8 rounded-lg bg-void" />
+          <div className="flex items-center gap-4">
+            <div className="size-12 rounded-full bg-void" />
+            <div className="space-y-2">
+              <div className="h-5 w-48 rounded bg-void" />
+              <div className="h-3 w-32 rounded bg-void" />
+            </div>
+          </div>
+        </div>
+        <div className="text-center py-12 text-sm text-text-muted">Loading employee...</div>
+      </div>
+    );
   }
 
-  const riskLevel = getRiskLevel(employee.riskScore);
-  const campaignHistory = getEmployeeCampaignHistory(employee.id);
-  const trainingProgress = getEmployeeTrainingProgress(employee.id);
-  const assessment = getEmployeeRiskAssessment(employee.id);
+  if (error) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <Link href="/employees" className="flex items-center gap-2 text-sm text-accent-blue-light hover:underline">
+          <ArrowLeft className="size-4" /> Back to employees
+        </Link>
+        <div className="border border-status-danger/20 bg-status-danger/5 rounded-xl p-6 text-center">
+          <p className="text-sm text-status-danger mb-2">{error}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
-  const trendColor = assessment.trend === "improving" ? "text-status-success" : assessment.trend === "declining" ? "text-status-danger" : "text-text-muted";
+  if (!employee) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <Link href="/employees" className="flex items-center gap-2 text-sm text-accent-blue-light hover:underline">
+          <ArrowLeft className="size-4" /> Back to employees
+        </Link>
+        <div className="text-center py-12 border border-dashed border-default-border rounded-xl">
+          <p className="text-sm text-text-muted">Employee not found</p>
+        </div>
+      </div>
+    );
+  }
 
-  const initials = getInitials(employee.name);
+  const riskLevel = riskLevelLabels[employee.risk_level] ?? "Secure";
+  const riskColor = riskColors[riskLevel] ?? riskColors.Secure;
+  const initials = getInitials(employee.first_name, employee.last_name);
+  const assessmentFactors = (snapshot?.factors as Array<{ name: string; score: number; severity: string }> | undefined) ?? [];
+  const trend = snapshot?.trigger_reason ?? "stable";
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header with profile */}
       <div className="flex items-start gap-4">
         <Link
           href="/employees"
@@ -66,17 +133,12 @@ export default async function EmployeeDetailPage({
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-0.5">
-              <h1 className="text-xl font-semibold tracking-tight text-text-primary">{employee.name}</h1>
-              <span className={cn(
-                "text-[10px] font-semibold border rounded px-2 py-0.5",
-                riskLevel === "High Risk" ? "text-status-danger bg-status-danger/10 border-status-danger/20" :
-                riskLevel === "Medium Risk" ? "text-status-warning bg-status-warning/10 border-status-warning/20" :
-                "text-status-success bg-status-success/10 border-status-success/20"
-              )}>
+              <h1 className="text-xl font-semibold tracking-tight text-text-primary">{employee.first_name} {employee.last_name}</h1>
+              <span className={cn("text-[10px] font-semibold border rounded px-2 py-0.5", riskColor)}>
                 {riskLevel}
               </span>
             </div>
-            <p className="text-xs text-text-muted">{employee.title} &bull; {employee.department}</p>
+            <p className="text-xs text-text-muted">{employee.position} &bull; {employee.department_name}</p>
           </div>
           <Button variant="outline" size="sm" className="text-xs flex items-center gap-1.5 shrink-0">
             <Mail className="size-3.5" /> Send Training
@@ -85,19 +147,17 @@ export default async function EmployeeDetailPage({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left column — Profile + Risk + Training */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Profile card */}
           <div className="border border-default-border bg-surface rounded-xl p-5">
             <h3 className="text-sm font-semibold text-text-primary mb-4">Profile</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="space-y-1">
                 <span className="text-[10px] text-text-muted flex items-center gap-1"><Building2 className="size-3" /> Department</span>
-                <span className="text-xs font-medium text-text-secondary">{employee.department}</span>
+                <span className="text-xs font-medium text-text-secondary">{employee.department_name}</span>
               </div>
               <div className="space-y-1">
                 <span className="text-[10px] text-text-muted flex items-center gap-1"><Briefcase className="size-3" /> Title</span>
-                <span className="text-xs font-medium text-text-secondary">{employee.title}</span>
+                <span className="text-xs font-medium text-text-secondary">{employee.position}</span>
               </div>
               <div className="space-y-1">
                 <span className="text-[10px] text-text-muted flex items-center gap-1"><Mail className="size-3" /> Email</span>
@@ -105,20 +165,19 @@ export default async function EmployeeDetailPage({
               </div>
               <div className="space-y-1">
                 <span className="text-[10px] text-text-muted flex items-center gap-1"><Calendar className="size-3" /> Joined</span>
-                <span className="text-xs text-text-secondary">{employee.joinDate}</span>
+                <span className="text-xs text-text-secondary">{employee.hire_date ? new Date(employee.hire_date).toLocaleDateString() : new Date(employee.created_at).toLocaleDateString()}</span>
               </div>
             </div>
           </div>
 
-          {/* Risk Assessment */}
           <div className="border border-default-border bg-surface rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-text-primary">Risk Assessment</h3>
-              <div className={cn("flex items-center gap-1 text-xs", trendColor)}>
-                {assessment.trend === "improving" && <TrendingUp className="size-3.5" />}
-                {assessment.trend === "declining" && <TrendingDown className="size-3.5" />}
-                {assessment.trend === "stable" && <Minus className="size-3.5" />}
-                <span className="capitalize">{assessment.trend}</span>
+              <div className={cn("flex items-center gap-1 text-xs", trend === "improving" ? "text-status-success" : trend === "declining" ? "text-status-danger" : "text-text-muted")}>
+                {trend === "improving" && <TrendingUp className="size-3.5" />}
+                {trend === "declining" && <TrendingDown className="size-3.5" />}
+                {trend === "stable" && <Minus className="size-3.5" />}
+                <span className="capitalize">{trend}</span>
               </div>
             </div>
             <div className="mb-4">
@@ -129,7 +188,7 @@ export default async function EmployeeDetailPage({
                   riskLevel === "High Risk" ? "text-status-danger" :
                   riskLevel === "Medium Risk" ? "text-status-warning" :
                   "text-status-success"
-                )}>{employee.riskScore}/100</span>
+                )}>{employee.risk_score}/100</span>
               </div>
               <div className="w-full h-2.5 bg-void rounded-full overflow-hidden">
                 <div
@@ -139,7 +198,7 @@ export default async function EmployeeDetailPage({
                     riskLevel === "Medium Risk" ? "bg-status-warning" :
                     "bg-status-success"
                   )}
-                  style={{ width: `${employee.riskScore}%` }}
+                  style={{ width: `${employee.risk_score}%` }}
                 />
               </div>
               <div className="flex items-center justify-between mt-1 text-[10px] text-text-muted">
@@ -148,7 +207,7 @@ export default async function EmployeeDetailPage({
               </div>
             </div>
             <div className="space-y-2.5">
-              {assessment.factors.map((factor) => (
+              {assessmentFactors.length > 0 ? assessmentFactors.map((factor) => (
                 <div key={factor.name}>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-[11px] text-text-secondary">{factor.name}</span>
@@ -169,121 +228,52 @@ export default async function EmployeeDetailPage({
                     />
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="text-xs text-text-muted text-center py-2">No risk assessment factors available</p>
+              )}
             </div>
           </div>
 
-          {/* Training Progress */}
           <div className="border border-default-border bg-surface rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-text-primary">Training Progress</h3>
-              <span className="text-xs text-text-muted">{employee.trainingCompleted}/{trainingProgress.length} courses</span>
+              <span className="text-xs text-text-muted">0/0 courses</span>
             </div>
             <div className="w-full h-2 bg-void rounded-full overflow-hidden mb-4">
-              <div
-                className="h-full rounded-full bg-accent-cyan"
-                style={{ width: `${(employee.trainingCompleted / trainingProgress.length) * 100}%` }}
-              />
+              <div className="h-full rounded-full bg-accent-cyan" style={{ width: "0%" }} />
             </div>
-            <div className="space-y-2">
-              {trainingProgress.map((course) => (
-                <div key={course.courseId} className="flex items-center justify-between py-2 border-b border-default-border/20 last:border-0">
-                  <div className="flex items-center gap-2.5">
-                    {course.completed ? (
-                      <div className="flex items-center justify-center size-6 rounded-full bg-status-success/10">
-                        <Check className="size-3 text-status-success" />
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center size-6 rounded-full bg-text-muted/10">
-                        <X className="size-3 text-text-muted" />
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-[11px] font-medium text-text-primary">{course.name}</p>
-                      <span className="text-[10px] text-text-muted">{course.category}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {course.completed && (
-                      <span className="text-[10px] font-mono text-text-muted">{course.score}%</span>
-                    )}
-                    <span className={cn(
-                      "text-[10px] font-medium px-1.5 py-0.5 rounded",
-                      course.completed ? "text-status-success bg-status-success/10" : "text-text-muted bg-text-muted/10"
-                    )}>
-                      {course.completed ? "Complete" : "Pending"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <p className="text-xs text-text-muted text-center py-4">Training data will appear once courses are assigned</p>
           </div>
         </div>
 
-        {/* Right column — Campaign History + Stats */}
         <div className="space-y-4">
-          {/* Stats summary */}
           <div className="border border-default-border bg-surface rounded-xl p-5">
             <h3 className="text-sm font-semibold text-text-primary mb-4">Activity Summary</h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-void rounded-lg p-3 text-center">
-                <span className="text-lg font-bold font-mono text-text-primary">{employee.campaignsCompleted}</span>
+                <span className="text-lg font-bold font-mono text-text-primary">0</span>
                 <p className="text-[10px] text-text-muted mt-0.5">Campaigns</p>
               </div>
               <div className="bg-void rounded-lg p-3 text-center">
-                <span className="text-lg font-bold font-mono text-status-danger">{employee.totalPhishClicked}</span>
+                <span className="text-lg font-bold font-mono text-status-danger">0</span>
                 <p className="text-[10px] text-text-muted mt-0.5">Phish Clicks</p>
               </div>
               <div className="bg-void rounded-lg p-3 text-center">
-                <span className="text-lg font-bold font-mono text-status-success">{employee.trainingCompleted}</span>
+                <span className="text-lg font-bold font-mono text-status-success">0</span>
                 <p className="text-[10px] text-text-muted mt-0.5">Trainings</p>
               </div>
               <div className="bg-void rounded-lg p-3 text-center">
-                <span className="text-lg font-bold font-mono text-accent-purple-light">{employee.lastPhishClicked || "N/A"}</span>
+                <span className="text-lg font-bold font-mono text-accent-purple-light">N/A</span>
                 <p className="text-[10px] text-text-muted mt-0.5">Last Click</p>
               </div>
             </div>
           </div>
 
-          {/* Campaign History */}
           <div className="border border-default-border bg-surface rounded-xl p-5">
             <h3 className="text-sm font-semibold text-text-primary mb-4">Campaign History</h3>
-            <div className="space-y-2">
-              {campaignHistory.map((campaign) => {
-                const outcome = outcomeBadge[campaign.outcome];
-                return (
-                  <div key={campaign.id} className="flex items-start gap-3 py-2 border-b border-default-border/20 last:border-0">
-                    <div className={cn(
-                      "flex items-center justify-center size-7 rounded-lg shrink-0 mt-0.5",
-                      campaign.outcome === "Passed" ? "bg-status-success/10" :
-                      campaign.outcome === "Clicked" ? "bg-status-danger/10" :
-                      "bg-status-warning/10"
-                    )}>
-                      <MousePointerClick className={cn(
-                        "size-3.5",
-                        campaign.outcome === "Passed" ? "text-status-success" :
-                        campaign.outcome === "Clicked" ? "text-status-danger" :
-                        "text-status-warning"
-                      )} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <Link href={`/campaigns/${campaign.id}`} className="text-[11px] font-medium text-text-primary hover:text-accent-blue-light transition-colors">
-                        {campaign.name}
-                      </Link>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-text-muted">{campaign.date}</span>
-                        <span className={cn("text-[10px] font-medium border rounded px-1", outcome.color)}>
-                          {outcome.label}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <p className="text-xs text-text-muted text-center py-4">Campaign history will appear once campaigns are assigned</p>
           </div>
 
-          {/* Quick actions */}
           <div className="space-y-2">
             <Button className="w-full bg-accent-blue hover:bg-accent-blue-dim text-white text-xs">
               Assign Training

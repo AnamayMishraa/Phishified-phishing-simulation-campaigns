@@ -42,7 +42,7 @@ class AuditLog(models.Model):
         return f"{self.action} on {self.resource_type}#{self.resource_id}"
 
     def save(self, *args, **kwargs):
-        if self.pk:
+        if not self._state.adding:
             raise RuntimeError("AuditLog records are immutable and cannot be updated.")
         super().save(*args, **kwargs)
 
