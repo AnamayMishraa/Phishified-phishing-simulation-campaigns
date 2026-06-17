@@ -9,6 +9,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 AUTH_USER_MODEL = "accounts.User"
 
 INSTALLED_APPS = [
+    "apps.accounts",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -23,7 +24,6 @@ INSTALLED_APPS = [
     "django_filters",
     "django_celery_beat",
     # Local
-    "apps.accounts",
     "apps.organizations",
     "apps.employees",
     "apps.templates",
