@@ -52,10 +52,15 @@ class CampaignViewSet(viewsets.ModelViewSet):
             created_by=self.request.user,
         )
 
-    def perform_destroy(self, instance):
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
         if instance.status == "active":
-            raise ValueError("Cannot delete an active campaign. Pause it first.")
+            return Response(
+                {"detail": "Cannot delete an active campaign. Pause it first."},
+                status=status.HTTP_409_CONFLICT,
+            )
         instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["post"])
     def launch(self, request, pk=None):

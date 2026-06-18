@@ -7,6 +7,8 @@ const publicPaths = [
   "/_next",
   "/api",
   "/track",
+  "/landing",
+  "/completion",
 ];
 
 export function proxy(request: NextRequest) {

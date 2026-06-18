@@ -2,11 +2,21 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { api, ApiError } from "@/lib/api/client";
 import type { CampaignDetail, CampaignAssignment, CampaignActivity as ApiActivity, PaginatedResponse } from "@/lib/api/types";
 import {
@@ -97,7 +107,12 @@ export default function CampaignDetailPage() {
   const [activities, setActivities] = useState<ApiActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
   const [launching, setLaunching] = useState(false);
+  const [pausing, setPausing] = useState(false);
+  const [resuming, setResuming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const fetchCampaign = useCallback(() => {
     if (!id) return;
@@ -149,6 +164,63 @@ export default function CampaignDetailPage() {
       toast.error(message);
     } finally {
       setLaunching(false);
+    }
+  };
+
+  const handlePause = async () => {
+    setPausing(true);
+    try {
+      await api(`/campaigns/${id}/pause/`, { method: "POST" });
+      toast.success("Campaign paused");
+      fetchCampaign();
+    } catch (e) {
+      const message =
+        e instanceof ApiError
+          ? typeof e.body === "object" && e.body !== null && "detail" in e.body
+            ? String((e.body as Record<string, unknown>).detail)
+            : "Failed to pause campaign"
+          : "Failed to pause campaign";
+      toast.error(message);
+    } finally {
+      setPausing(false);
+    }
+  };
+
+  const handleResume = async () => {
+    setResuming(true);
+    try {
+      await api(`/campaigns/${id}/resume/`, { method: "POST" });
+      toast.success("Campaign resumed");
+      fetchCampaign();
+    } catch (e) {
+      const message =
+        e instanceof ApiError
+          ? typeof e.body === "object" && e.body !== null && "detail" in e.body
+            ? String((e.body as Record<string, unknown>).detail)
+            : "Failed to resume campaign"
+          : "Failed to resume campaign";
+      toast.error(message);
+    } finally {
+      setResuming(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await api(`/campaigns/${id}/`, { method: "DELETE" });
+      toast.success("Campaign deleted");
+      router.push("/campaigns");
+    } catch (e) {
+      const message =
+        e instanceof ApiError
+          ? typeof e.body === "object" && e.body !== null && "detail" in e.body
+            ? String((e.body as Record<string, unknown>).detail)
+            : "Failed to delete campaign"
+          : "Failed to delete campaign";
+      toast.error(message);
+      setDeleting(false);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -218,8 +290,8 @@ export default function CampaignDetailPage() {
         </div>
         <div className="flex gap-2 shrink-0">
           {campaign.status === "active" ? (
-            <Button variant="outline" size="sm" className="text-xs flex items-center gap-1.5">
-              <Pause className="size-3.5" /> Pause
+            <Button variant="outline" size="sm" disabled={pausing} onClick={handlePause} className="text-xs flex items-center gap-1.5">
+              {pausing ? <><Loader2 className="size-3.5 animate-spin" /> Pausing...</> : <><Pause className="size-3.5" /> Pause</>}
             </Button>
           ) : campaign.status === "draft" ? (
             <Button
@@ -235,15 +307,46 @@ export default function CampaignDetailPage() {
                 <><Play className="size-3.5" /> Launch</>
               )}
             </Button>
+          ) : campaign.status === "paused" ? (
+            <Button variant="outline" size="sm" disabled={resuming} onClick={handleResume} className="text-xs flex items-center gap-1.5">
+              {resuming ? <><Loader2 className="size-3.5 animate-spin" /> Resuming...</> : <><Play className="size-3.5" /> Resume</>}
+            </Button>
           ) : null}
           {campaign.status !== "completed" && (
-            <Button variant="outline" size="sm" className="text-xs flex items-center gap-1.5">
-              <Edit className="size-3.5" /> Edit
-            </Button>
+            <Link href={`/campaigns/${campaign.id}/edit`}>
+              <Button variant="outline" size="sm" className="text-xs flex items-center gap-1.5">
+                <Edit className="size-3.5" /> Edit
+              </Button>
+            </Link>
           )}
-          <Button variant="outline" size="sm" className="text-xs flex items-center gap-1.5 text-status-danger">
-            <Trash2 className="size-3.5" /> Delete
-          </Button>
+          <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <DialogTrigger render={
+              <Button variant="outline" size="sm" className="text-xs flex items-center gap-1.5 text-status-danger">
+                <Trash2 className="size-3.5" /> Delete
+              </Button>
+            } />
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Campaign</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete "{campaign.name}"? This action cannot be undone.
+                  {campaign.status === "active" && " Active campaigns must be paused before deletion."}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose render={<Button variant="outline" size="sm" disabled={deleting}>Cancel</Button>} />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={deleting}
+                  onClick={handleDelete}
+                  className="text-status-danger flex items-center gap-1.5"
+                >
+                  {deleting ? <><Loader2 className="size-3.5 animate-spin" /> Deleting...</> : <><Trash2 className="size-3.5" /> Delete</>}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

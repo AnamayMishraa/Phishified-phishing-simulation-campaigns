@@ -14,4 +14,5 @@ urlpatterns = [
     path("api/v1/notifications/", include("apps.notifications.urls")),
     path("api/v1/dashboard/", include("apps.dashboard.urls")),
     path("api/v1/track/", include("apps.tracking.urls")),
+    path("api/v1/public/pages/", include("apps.landing_pages.public_urls")),
 ]

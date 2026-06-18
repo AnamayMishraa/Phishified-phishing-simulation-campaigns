@@ -1,3 +1,9 @@
+import logging
+
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.views import View
+
 from rest_framework import filters, viewsets
 from rest_framework.permissions import IsAuthenticated
 
@@ -7,6 +13,8 @@ from apps.landing_pages.serializers import (
     LandingPageListSerializer,
     LandingPageWriteSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class LandingPageViewSet(viewsets.ModelViewSet):
@@ -46,3 +54,15 @@ class LandingPageViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         instance.is_active = False
         instance.save(update_fields=["is_active"])
+
+
+class PublicLandingPageView(View):
+    def get(self, request, slug):
+        page = get_object_or_404(LandingPage, slug=slug, is_active=True)
+        return JsonResponse({
+            "name": page.name,
+            "slug": page.slug,
+            "category": page.category,
+            "html_content": page.html_content,
+            "css_content": page.css_content,
+        })
