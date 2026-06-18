@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "@/hooks/use-sidebar";
+import { useAuth } from "@/components/auth/auth-provider";
 import {
   Tooltip,
   TooltipContent,
@@ -12,9 +13,9 @@ import { cn } from "@/lib/utils";
 import { mainNavItems, bottomNavItems } from "@/lib/navigation";
 import {
   Shield,
-  ChevronDown,
   PanelLeftClose,
   PanelLeft,
+  LogOut,
 } from "lucide-react";
 
 function NavItem({
@@ -71,6 +72,15 @@ function NavItem({
 export function Sidebar() {
   const pathname = usePathname();
   const { isCollapsed, toggle } = useSidebar();
+  const { user, logout } = useAuth();
+  const initials = user
+    ? (user.name || user.email)
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "??";
 
   return (
     <aside
@@ -134,30 +144,40 @@ export function Sidebar() {
         {/* User Profile */}
         <div
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 mt-2 transition-colors duration-200 cursor-pointer hover:bg-white/[0.04]",
+            "flex items-center gap-3 rounded-lg px-3 py-2 mt-2 transition-colors duration-200 hover:bg-white/[0.04]",
             isCollapsed && "justify-center px-2"
           )}
         >
           <div className="relative shrink-0">
             <div className="size-7 rounded-full bg-gradient-to-br from-accent-blue to-accent-cyan flex items-center justify-center text-[11px] font-semibold text-white">
-              JD
+              {initials}
             </div>
             <div className="absolute -bottom-0.5 -right-0.5 size-2.5 bg-status-success rounded-full border-2 border-sidebar" />
           </div>
-          {!isCollapsed && (
+          {!isCollapsed && user && (
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-text-primary truncate">
-                Jane Doe
+                {user.name || user.email}
               </p>
-              <p className="text-[10px] text-text-muted truncate">
-                SOC Analyst
+              <p className="text-[10px] text-text-muted truncate capitalize">
+                {user.role.replace("_", " ")}
               </p>
             </div>
           )}
-          {!isCollapsed && (
-            <ChevronDown className="size-3.5 text-text-muted shrink-0" />
-          )}
         </div>
+
+        {/* Logout */}
+        <button
+          onClick={logout}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-text-muted transition-colors duration-200 hover:bg-white/[0.04] hover:text-status-danger",
+            isCollapsed && "justify-center px-2"
+          )}
+          aria-label="Sign out"
+        >
+          <LogOut className="size-[18px]" />
+          {!isCollapsed && <span className="text-xs">Sign out</span>}
+        </button>
 
         {/* Collapse Toggle */}
         <button

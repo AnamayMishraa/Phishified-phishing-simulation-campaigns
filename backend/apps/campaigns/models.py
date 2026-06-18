@@ -194,6 +194,7 @@ class CampaignActivity(models.Model):
         choices=ActivityType.choices,
     )
     message = models.TextField()
+    metadata = models.JSONField(null=True, blank=True, default=None)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:

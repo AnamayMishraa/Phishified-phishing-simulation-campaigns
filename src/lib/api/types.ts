@@ -187,6 +187,37 @@ export interface ActionResponse {
   target_count?: number;
 }
 
+// Landing Pages
+export interface LandingPage {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface LandingPageDetail extends LandingPage {
+  organization_id: string;
+  title: string;
+  html_content: string;
+  css_content: string;
+  difficulty_level: string;
+  created_by_name: string;
+  updated_at: string;
+}
+
+export interface LandingPageWrite {
+  name: string;
+  slug?: string;
+  category?: string;
+  title?: string;
+  html_content?: string;
+  css_content?: string;
+  difficulty_level?: string;
+  is_active?: boolean;
+}
+
 // Error
 export interface ApiError {
   detail?: string;

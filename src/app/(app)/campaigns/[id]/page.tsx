@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -26,6 +27,7 @@ import {
   X,
   Flag,
   Clock,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -95,8 +97,9 @@ export default function CampaignDetailPage() {
   const [activities, setActivities] = useState<ApiActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [launching, setLaunching] = useState(false);
 
-  useEffect(() => {
+  const fetchCampaign = useCallback(() => {
     if (!id) return;
     let cancelled = false;
     setLoading(true);
@@ -125,6 +128,29 @@ export default function CampaignDetailPage() {
 
     return () => { cancelled = true; };
   }, [id]);
+
+  useEffect(() => {
+    fetchCampaign();
+  }, [fetchCampaign]);
+
+  const handleLaunch = async () => {
+    setLaunching(true);
+    try {
+      await api(`/campaigns/${id}/launch/`, { method: "POST" });
+      toast.success("Campaign launched successfully");
+      fetchCampaign();
+    } catch (e) {
+      const message =
+        e instanceof ApiError
+          ? typeof e.body === "object" && e.body !== null && "detail" in e.body
+            ? String((e.body as Record<string, unknown>).detail)
+            : "Failed to launch campaign"
+          : "Failed to launch campaign";
+      toast.error(message);
+    } finally {
+      setLaunching(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -196,8 +222,18 @@ export default function CampaignDetailPage() {
               <Pause className="size-3.5" /> Pause
             </Button>
           ) : campaign.status === "draft" ? (
-            <Button variant="outline" size="sm" className="text-xs flex items-center gap-1.5">
-              <Play className="size-3.5" /> Launch
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={launching}
+              onClick={handleLaunch}
+              className="text-xs flex items-center gap-1.5"
+            >
+              {launching ? (
+                <><Loader2 className="size-3.5 animate-spin" /> Launching...</>
+              ) : (
+                <><Play className="size-3.5" /> Launch</>
+              )}
             </Button>
           ) : null}
           {campaign.status !== "completed" && (
