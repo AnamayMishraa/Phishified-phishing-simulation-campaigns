@@ -126,5 +126,6 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 
+DEFAULT_FROM_EMAIL = "noreply@phishified.local"
 PHISHIFIED_BASE_URL = "http://localhost:3000"
 FRONTEND_BASE_URL = "http://localhost:3000"
