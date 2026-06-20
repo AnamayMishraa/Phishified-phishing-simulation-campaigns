@@ -4,9 +4,10 @@ from django.db import models
 
 
 class RiskLevel(models.TextChoices):
-    SECURE = "secure", "Secure"
+    LOW = "low", "Low"
     MEDIUM = "medium", "Medium"
     HIGH = "high", "High"
+    CRITICAL = "critical", "Critical"
 
 
 class Employee(models.Model):
@@ -32,7 +33,7 @@ class Employee(models.Model):
     risk_level = models.CharField(
         max_length=10,
         choices=RiskLevel.choices,
-        default=RiskLevel.SECURE,
+        default=RiskLevel.LOW,
     )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

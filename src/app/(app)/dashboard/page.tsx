@@ -6,6 +6,8 @@ import {
 } from "@/components/dashboard/charts";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { HighRiskEmployees } from "@/components/dashboard/high-risk-employees";
+import { MostImprovedEmployees } from "@/components/dashboard/most-improved-employees";
+import { HighestReportingEmployees } from "@/components/dashboard/highest-reporting-employees";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { getDashboardKpis } from "@/data/analytics";
 import { getOverviewStats } from "@/data/analytics";
@@ -56,12 +58,15 @@ export default function DashboardPage() {
         <DepartmentRiskChart />
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <HighRiskEmployees />
+        <MostImprovedEmployees />
+        <HighestReportingEmployees />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <div className="lg:col-span-3">
           <ActivityFeed />
-        </div>
-        <div className="lg:col-span-2">
-          <HighRiskEmployees />
         </div>
       </div>
 

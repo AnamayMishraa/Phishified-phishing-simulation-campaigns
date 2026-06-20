@@ -1,3 +1,7 @@
+import csv
+
+from django.http import HttpResponse
+
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -125,6 +129,52 @@ class CampaignViewSet(viewsets.ModelViewSet):
         )
 
         return Response({"detail": "Campaign resumed."})
+
+    @action(detail=True, methods=["get"])
+    def export_csv(self, request, pk=None):
+        campaign = self.get_object()
+        assignments = CampaignAssignment.objects.filter(
+            campaign=campaign,
+        ).select_related("employee__department")
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = (
+            f'attachment; filename="{campaign.name.replace(chr(34), "")}-export.csv"'
+        )
+
+        writer = csv.writer(response)
+        writer.writerow([
+            "Employee Name",
+            "Email",
+            "Department",
+            "Opened",
+            "Clicked",
+            "Submitted",
+            "Reported",
+            "Opened At",
+            "Clicked At",
+            "Submitted At",
+            "Reported At",
+        ])
+
+        for a in assignments:
+            employee = a.employee
+            dept_name = employee.department.name if employee.department else ""
+            writer.writerow([
+                f"{employee.first_name} {employee.last_name}",
+                employee.email,
+                dept_name,
+                "Yes" if a.opened_at else "No",
+                "Yes" if a.clicked_at else "No",
+                "Yes" if a.submitted_at else "No",
+                "Yes" if a.reported_at else "No",
+                a.opened_at.isoformat() if a.opened_at else "",
+                a.clicked_at.isoformat() if a.clicked_at else "",
+                a.submitted_at.isoformat() if a.submitted_at else "",
+                a.reported_at.isoformat() if a.reported_at else "",
+            ])
+
+        return response
 
 
 class CampaignAssignmentViewSet(viewsets.ReadOnlyModelViewSet):

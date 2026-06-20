@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "apps.notifications",
     "apps.dashboard",
     "apps.tracking",
+    "apps.email",
 ]
 
 MIDDLEWARE = [
@@ -115,10 +116,15 @@ SIMPLE_JWT = {
     "USER_ID_CLAIM": "user_id",
 }
 
-CORS_ALLOWED_ORIGINS: list[str] = []
+CORS_ALLOWED_ORIGINS: list[str] = [
+    "http://localhost:3000",
+]
 
 CELERY_BROKER_URL = "redis://localhost:6379/0"
 CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
+
+PHISHIFIED_BASE_URL = "http://localhost:3000"
+FRONTEND_BASE_URL = "http://localhost:3000"

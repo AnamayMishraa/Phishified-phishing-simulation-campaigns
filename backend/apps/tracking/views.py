@@ -1,9 +1,12 @@
 import json
 import logging
 
+from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 
 from apps.campaigns.models import CampaignAssignment
 from apps.tracking.services import TRANSPARENT_GIF, TrackingService
@@ -46,13 +49,15 @@ class ClickTrackingView(View):
             slug = None
 
         if slug:
-            redirect_url = f"/landing/{slug}/"
+            base = settings.FRONTEND_BASE_URL.rstrip("/")
+            redirect_url = f"{base}/landing/{slug}/?aid={assignment_id}"
         else:
             redirect_url = "/"
 
         return HttpResponseRedirect(redirect_url)
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class SubmitTrackingView(View):
     def post(self, request, assignment_id):
         assignment = get_object_or_404(
@@ -80,9 +85,11 @@ class SubmitTrackingView(View):
             slug = None
 
         if slug:
-            redirect_url = f"/completion/{slug}/"
+            base = settings.FRONTEND_BASE_URL.rstrip("/")
+            redirect_url = f"{base}/completion/{slug}/"
         else:
-            redirect_url = "/completion/"
+            base = settings.FRONTEND_BASE_URL.rstrip("/")
+            redirect_url = f"{base}/completion/"
 
         return HttpResponseRedirect(redirect_url)
 
@@ -95,13 +102,12 @@ class ReportTrackingView(View):
         )
 
         try:
-            result = TrackingService.record_report(assignment)
+            TrackingService.record_report(assignment)
         except Exception:
             logger.exception(
                 "Failed to record report for assignment %s", assignment_id
             )
-            return JsonResponse(
-                {"status": "error", "detail": "Failed to record report"}, status=500
-            )
 
-        return JsonResponse(result)
+        base = settings.FRONTEND_BASE_URL.rstrip("/")
+        redirect_url = f"{base}/completion/"
+        return HttpResponseRedirect(redirect_url)

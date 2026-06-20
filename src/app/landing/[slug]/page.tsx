@@ -10,6 +10,8 @@ interface LandingPageData {
   css_content: string;
 }
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+
 export default function LandingSlugPage({ params }: { params: Promise<{ slug: string }> }) {
   const [slug, setSlug] = useState<string | null>(null);
   const [aid, setAid] = useState<string | null>(null);
@@ -30,7 +32,7 @@ export default function LandingSlugPage({ params }: { params: Promise<{ slug: st
 
   useEffect(() => {
     if (!slug) return;
-    fetch(`/api/v1/public/pages/${slug}/`)
+    fetch(`${API_BASE}/api/v1/public/pages/${slug}/`)
       .then((res) => {
         if (!res.ok) throw new Error("Page not found");
         return res.json();
@@ -62,7 +64,7 @@ export default function LandingSlugPage({ params }: { params: Promise<{ slug: st
         }
 
         try {
-          const res = await fetch(`/api/v1/track/submit/${aid}/`, {
+          const res = await fetch(`${API_BASE}/api/v1/track/submit/${aid}/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ submitted_fields: fieldNames }),

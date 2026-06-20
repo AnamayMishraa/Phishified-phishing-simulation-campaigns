@@ -14,14 +14,22 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 RISK_RULES: dict[str, int] = {
-    "open": 0,
-    "click": 10,
-    "submit": 25,
-    "report": -10,
+    "open": 10,
+    "click": 30,
+    "submit": 60,
+    "report": -20,
 }
 
 
 class RiskService:
+    @staticmethod
+    def on_open(employee: Employee, campaign: Campaign) -> None:
+        RiskService._update_risk(
+            employee,
+            delta=RISK_RULES["open"],
+            reason=f"Opened phishing email in campaign '{campaign.name}'",
+        )
+
     @staticmethod
     def on_click(employee: Employee, campaign: Campaign) -> None:
         RiskService._update_risk(
@@ -48,11 +56,13 @@ class RiskService:
 
     @staticmethod
     def _get_risk_level(score: int) -> str:
-        if score >= 61:
+        if score >= 81:
+            return RiskLevel.CRITICAL
+        if score >= 51:
             return RiskLevel.HIGH
-        if score >= 31:
+        if score >= 21:
             return RiskLevel.MEDIUM
-        return RiskLevel.SECURE
+        return RiskLevel.LOW
 
     @staticmethod
     @transaction.atomic

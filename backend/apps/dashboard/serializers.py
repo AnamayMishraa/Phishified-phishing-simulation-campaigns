@@ -45,9 +45,28 @@ class HighRiskEmployeeSerializer(serializers.Serializer):
     risk_score = serializers.IntegerField()
 
 
+class MostImprovedEmployeeSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    department = serializers.CharField()
+    risk_score = serializers.IntegerField()
+    previous_risk_score = serializers.IntegerField()
+    improvement = serializers.IntegerField()
+
+
+class HighestReportingEmployeeSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    department = serializers.CharField()
+    total_reported = serializers.IntegerField()
+    risk_score = serializers.IntegerField()
+
+
 class DashboardSerializer(serializers.Serializer):
     kpis = serializers.DictField(child=serializers.DictField())
     campaign_performance = MonthlyPerformanceSerializer(many=True)
     department_risk = DepartmentRiskSerializer(many=True)
     recent_activities = RecentActivitySerializer(many=True)
     high_risk_employees = HighRiskEmployeeSerializer(many=True)
+    most_improved_employees = MostImprovedEmployeeSerializer(many=True)
+    highest_reporting_employees = HighestReportingEmployeeSerializer(many=True)

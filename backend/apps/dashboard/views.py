@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.campaigns.models import Campaign, CampaignActivity, CampaignAssignment
-from apps.employees.models import Employee
+from apps.employees.models import Employee, EmployeeRiskSnapshot
 from apps.dashboard.serializers import DashboardSerializer
 
 
@@ -234,11 +234,15 @@ class DashboardView(APIView):
         ]
 
         # ------------------------------------------------------------------
-        # 5. High Risk Employees (top 5 by risk_score)
+        # 5. High Risk Employees (top 5 by risk_score — high + critical)
         # ------------------------------------------------------------------
         high_risk_qs = (
             Employee.objects
-            .filter(organization=org, risk_level="high", is_active=True)
+            .filter(
+                organization=org,
+                risk_level__in=["high", "critical"],
+                is_active=True,
+            )
             .annotate(
                 total_phish_clicked=Count(
                     "campaign_assignments",
@@ -261,6 +265,70 @@ class DashboardView(APIView):
         ]
 
         # ------------------------------------------------------------------
+        # 6. Most Improved Employees (largest risk_score decrease vs earlier snapshot)
+        # ------------------------------------------------------------------
+        improved_qs = (
+            Employee.objects
+            .filter(organization=org, is_active=True)
+            .select_related("department")
+            .order_by("risk_score")[:10]
+        )
+
+        most_improved_employees = []
+        for e in improved_qs:
+            prev_snapshot = (
+                EmployeeRiskSnapshot.objects
+                .filter(employee=e)
+                .order_by("-snapshot_date")
+                .first()
+            )
+            prev_score = prev_snapshot.risk_score if prev_snapshot else e.risk_score
+            improvement = max(0, prev_score - e.risk_score)
+            if improvement > 0 or not prev_snapshot:
+                most_improved_employees.append(
+                    {
+                        "id": e.id,
+                        "name": f"{e.first_name} {e.last_name}",
+                        "department": e.department.name if e.department else "",
+                        "risk_score": e.risk_score,
+                        "previous_risk_score": prev_score,
+                        "improvement": improvement,
+                    }
+                )
+
+        most_improved_employees = sorted(
+            most_improved_employees, key=lambda x: x["improvement"], reverse=True
+        )[:5]
+
+        # ------------------------------------------------------------------
+        # 7. Highest Reporting Employees (most emails reported)
+        # ------------------------------------------------------------------
+        reporting_qs = (
+            Employee.objects
+            .filter(organization=org, is_active=True)
+            .annotate(
+                total_reported=Count(
+                    "campaign_assignments",
+                    filter=Q(campaign_assignments__reported_at__isnull=False),
+                ),
+            )
+            .filter(total_reported__gt=0)
+            .select_related("department")
+            .order_by("-total_reported")[:5]
+        )
+
+        highest_reporting_employees = [
+            {
+                "id": e.id,
+                "name": f"{e.first_name} {e.last_name}",
+                "department": e.department.name if e.department else "",
+                "total_reported": e.total_reported,
+                "risk_score": e.risk_score,
+            }
+            for e in reporting_qs
+        ]
+
+        # ------------------------------------------------------------------
         # Response
         # ------------------------------------------------------------------
         data = {
@@ -269,6 +337,8 @@ class DashboardView(APIView):
             "department_risk": department_risk,
             "recent_activities": recent_activities,
             "high_risk_employees": high_risk_employees,
+            "most_improved_employees": most_improved_employees,
+            "highest_reporting_employees": highest_reporting_employees,
         }
 
         serializer = DashboardSerializer(data)

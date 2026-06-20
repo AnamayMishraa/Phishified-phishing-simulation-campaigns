@@ -81,12 +81,10 @@ class CampaignService:
         campaign: Campaign,
         employees: list[Employee],
     ) -> int:
-        now = timezone.now()
         assignments = [
             CampaignAssignment(
                 campaign=campaign,
                 employee=emp,
-                sent_at=now,
             )
             for emp in employees
         ]
@@ -94,12 +92,11 @@ class CampaignService:
         return len(assignments)
 
     @staticmethod
-    def update_campaign_status(campaign: Campaign, count: int) -> None:
+    def update_campaign_status(campaign: Campaign) -> None:
         now = timezone.now()
         campaign.status = CampaignStatus.ACTIVE
         campaign.launched_at = now
-        campaign.sent_count = count
-        campaign.save(update_fields=["status", "launched_at", "sent_count", "updated_at"])
+        campaign.save(update_fields=["status", "launched_at", "updated_at"])
 
     @staticmethod
     def launch(
@@ -112,7 +109,7 @@ class CampaignService:
             CampaignService.validate_campaign(campaign)
             employees = CampaignService.select_targets(campaign, targeting)
             count = CampaignService.create_assignments(campaign, employees)
-            CampaignService.update_campaign_status(campaign, count)
+            CampaignService.update_campaign_status(campaign)
 
         try:
             CampaignActivity.objects.create(
@@ -167,6 +164,15 @@ class CampaignService:
         except Exception:
             logger.exception(
                 "Failed to create notifications for campaign %s", campaign.id
+            )
+
+        try:
+            from apps.email.tasks import send_campaign_emails
+
+            send_campaign_emails.delay(str(campaign.id))
+        except Exception:
+            logger.exception(
+                "Failed to dispatch email tasks for campaign %s", campaign.id
             )
 
         return {"detail": "Campaign launched.", "target_count": count}

@@ -46,6 +46,7 @@ export const routeLabels: Record<string, string> = {
   "/templates": "Email Templates",
   "/landing-pages": "Landing Pages",
   "/employees": "Employees",
+  "/employees/leaderboard": "Leaderboard",
   "/analytics": "Analytics",
   "/reports": "Reports",
   "/training": "Training",

@@ -38,6 +38,7 @@ import {
   Flag,
   Clock,
   Loader2,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +63,10 @@ const activityStyles: Record<string, string> = {
 function formatRate(rate: number | null | undefined): string {
   if (rate == null) return "—";
   return `${(rate * 100).toFixed(1)}%`;
+}
+
+function funnelOpened(step: string): boolean {
+  return ["opened", "clicked", "submitted", "reported"].includes(step);
 }
 
 function funnelClicked(step: string): boolean {
@@ -113,6 +118,32 @@ export default function CampaignDetailPage() {
   const [resuming, setResuming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
+
+  const handleExportCsv = async () => {
+    setExportingCsv(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const url = `http://localhost:8000/api/v1/campaigns/${id}/export-csv/`;
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `${campaign?.name ?? "campaign"}-export.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      toast.error("Failed to export CSV");
+    } finally {
+      setExportingCsv(false);
+    }
+  };
 
   const fetchCampaign = useCallback(() => {
     if (!id) return;
@@ -319,6 +350,19 @@ export default function CampaignDetailPage() {
               </Button>
             </Link>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={exportingCsv}
+            onClick={handleExportCsv}
+            className="text-xs flex items-center gap-1.5"
+          >
+            {exportingCsv ? (
+              <><Loader2 className="size-3.5 animate-spin" /> Exporting...</>
+            ) : (
+              <><Download className="size-3.5" /> CSV</>
+            )}
+          </Button>
           <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <DialogTrigger render={
               <Button variant="outline" size="sm" className="text-xs flex items-center gap-1.5 text-status-danger">
@@ -419,6 +463,7 @@ export default function CampaignDetailPage() {
               <thead>
                 <tr className="border-b border-default-border/60">
                   <th className="text-[10px] font-medium uppercase tracking-wider text-text-muted pb-2 pr-4">Employee</th>
+                  <th className="text-[10px] font-medium uppercase tracking-wider text-text-muted pb-2 pr-4 text-center">Opened</th>
                   <th className="text-[10px] font-medium uppercase tracking-wider text-text-muted pb-2 pr-4 text-center">Clicked</th>
                   <th className="text-[10px] font-medium uppercase tracking-wider text-text-muted pb-2 pr-4 text-center">Submitted</th>
                   <th className="text-[10px] font-medium uppercase tracking-wider text-text-muted pb-2 text-center">Reported</th>
@@ -431,6 +476,13 @@ export default function CampaignDetailPage() {
                       <div>
                         <p className="text-xs font-medium text-text-primary">{target.employee_name}</p>
                       </div>
+                    </td>
+                    <td className="py-3 pr-4 text-center">
+                      {funnelOpened(target.funnel_step) ? (
+                        <Check className="size-4 text-accent-cyan-light inline" />
+                      ) : (
+                        <X className="size-4 text-text-muted/40 inline" />
+                      )}
                     </td>
                     <td className="py-3 pr-4 text-center">
                       {funnelClicked(target.funnel_step) ? (

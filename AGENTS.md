@@ -169,6 +169,29 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 }
 ```
 
+### Tracking Endpoints Are CSRF-Exempt
+The phishing simulation tracking endpoints in `apps/tracking/views.py` are **public endpoints with no authentication**. They simulate a real phishing scenario where a "victim" clicks a link and submits a form — there is no logged-in user, no session, and no CSRF token. 
+
+`SubmitTrackingView` is decorated with `@method_decorator(csrf_exempt, name="dispatch")` because:
+- The endpoint is intentionally public (no auth, no session)
+- `assignment_id` in the URL is the sole tracking identifier
+- CSRF protection would require a token exchange that breaks the simulation flow
+- The redirect target is set to `FRONTEND_BASE_URL` (Next.js), not a relative path
+
+Do NOT add CSRF protection to tracking endpoints unless the architecture changes to require authenticated sessions.
+
+### Direct API Calls (No Proxy)
+The frontend calls the Django backend **directly** via absolute URLs using `NEXT_PUBLIC_API_BASE_URL` (defaults to `http://localhost:8000`). There is no Next.js proxy/rewrite layer.
+
+```tsx
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+fetch(`${API_BASE}/api/v1/public/pages/${slug}/`)
+```
+
+CORS is configured on the Django side (`corsheaders` middleware): `CORS_ALLOWED_ORIGINS` includes the frontend URL (`http://localhost:3000` by default, overridable via `FRONTEND_BASE_URL` env var). In development, `CORS_ALLOW_ALL_ORIGINS = True`.
+
+**No `proxy.ts`** or `next.config.ts` rewrites exist. Remove them if you see them.
+
 ## Build Info
 - **Static pages generated**: 84 (6 static + 78 prerendered via `generateStaticParams`)
 - **Build command**: `npx next build`

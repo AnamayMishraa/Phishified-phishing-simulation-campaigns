@@ -36,6 +36,8 @@ export interface User {
 }
 
 // Employees
+export type RiskLevel = "low" | "medium" | "high" | "critical";
+
 export interface Employee {
   id: string;
   first_name: string;
@@ -44,7 +46,7 @@ export interface Employee {
   department_name: string;
   position: string;
   risk_score: number;
-  risk_level: "secure" | "medium" | "high";
+  risk_level: RiskLevel;
   is_active: boolean;
   created_at: string;
 }
@@ -65,14 +67,14 @@ export interface EmployeeWrite {
   position?: string;
   hire_date?: string | null;
   risk_score?: number;
-  risk_level?: "secure" | "medium" | "high";
+  risk_level?: RiskLevel;
   is_active?: boolean;
 }
 
 export interface EmployeeRiskSnapshot {
   id: string;
   risk_score: number;
-  risk_level: "secure" | "medium" | "high";
+  risk_level: RiskLevel;
   factors: Record<string, unknown>;
   trigger_reason: string;
   snapshot_date: string;
@@ -216,6 +218,85 @@ export interface LandingPageWrite {
   css_content?: string;
   difficulty_level?: string;
   is_active?: boolean;
+}
+
+// Leaderboard
+export interface LeaderboardEntry {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  department_name: string;
+  position: string;
+  risk_score: number;
+  risk_level: RiskLevel;
+  campaigns_participated: number;
+  open_rate: number;
+  click_rate: number;
+  submission_rate: number;
+  report_rate: number;
+}
+
+// Dashboard
+export interface DashboardEmployee {
+  id: string;
+  name: string;
+  department: string;
+  risk_score: number;
+}
+
+export interface HighRiskEmployee extends DashboardEmployee {
+  total_phish_clicked: number;
+}
+
+export interface MostImprovedEmployee extends DashboardEmployee {
+  previous_risk_score: number;
+  improvement: number;
+}
+
+export interface HighestReportingEmployee extends DashboardEmployee {
+  total_reported: number;
+}
+
+export interface DashboardKpiChange {
+  value: string;
+  trend: "up" | "down" | "neutral";
+  label: string;
+}
+
+export interface DashboardKpi {
+  value: number;
+  change: DashboardKpiChange;
+}
+
+export interface MonthlyPerformance {
+  month: string;
+  click_rate: number;
+  report_rate: number;
+}
+
+export interface DepartmentRisk {
+  name: string;
+  risk: number;
+  employee_count: number;
+}
+
+export interface DashboardActivity {
+  id: string;
+  type: string;
+  message: string;
+  department: string;
+  timestamp: string;
+}
+
+export interface DashboardData {
+  kpis: Record<string, DashboardKpi>;
+  campaign_performance: MonthlyPerformance[];
+  department_risk: DepartmentRisk[];
+  recent_activities: DashboardActivity[];
+  high_risk_employees: HighRiskEmployee[];
+  most_improved_employees: MostImprovedEmployee[];
+  highest_reporting_employees: HighestReportingEmployee[];
 }
 
 // Error

@@ -25,7 +25,7 @@ const riskColors: Record<string, string> = {
 const riskFilterOptions = ["All", "High Risk", "Medium Risk", "Secure"] as const;
 
 function getInitials(first: string, last: string): string {
-  return (first[0] ?? "" + (last[0] ?? "")).toUpperCase().slice(0, 2);
+  return ((first[0] ?? "") + (last[0] ?? "")).toUpperCase().slice(0, 2);
 }
 
 function getTrainingStatus(_completed: number): { label: string; color: string } {
@@ -101,6 +101,9 @@ export default function EmployeesPage() {
         description="Manage employees, view risk assessments, and import team members"
         actions={
           <div className="flex gap-2">
+            <Link href="/employees/leaderboard">
+              <Button variant="outline" className="flex items-center gap-2">Leaderboard</Button>
+            </Link>
             <Link href="/employees/import">
               <Button variant="outline" className="flex items-center gap-2">Import</Button>
             </Link>

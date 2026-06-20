@@ -44,6 +44,14 @@ class TrackingService:
                 ),
             )
 
+        try:
+            RiskService.on_open(assignment.employee, assignment.campaign)
+        except Exception:
+            logger.exception(
+                "Failed to update risk score on open for assignment %s",
+                assignment.id,
+            )
+
     @staticmethod
     def record_click(assignment: CampaignAssignment, request) -> str | None:
         with transaction.atomic():

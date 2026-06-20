@@ -94,3 +94,32 @@ class EmployeeWriteSerializer(serializers.ModelSerializer):
                 "An employee with this email already exists."
             )
         return value
+
+
+class LeaderboardSerializer(serializers.ModelSerializer):
+    department_name = serializers.CharField(
+        source="department.name", read_only=True, default=""
+    )
+    campaigns_participated = serializers.IntegerField(read_only=True)
+    open_rate = serializers.FloatField(read_only=True)
+    click_rate = serializers.FloatField(read_only=True)
+    submission_rate = serializers.FloatField(read_only=True)
+    report_rate = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = Employee
+        fields = [
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "department_name",
+            "position",
+            "risk_score",
+            "risk_level",
+            "campaigns_participated",
+            "open_rate",
+            "click_rate",
+            "submission_rate",
+            "report_rate",
+        ]
