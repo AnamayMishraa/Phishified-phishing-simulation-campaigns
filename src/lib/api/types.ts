@@ -299,6 +299,34 @@ export interface DashboardData {
   highest_reporting_employees: HighestReportingEmployee[];
 }
 
+// Infrastructure Settings
+export interface InfrastructureSetting {
+  id: string;
+  company_name: string;
+  sender_name: string;
+  sender_email: string;
+  landing_domain: string;
+  landing_domain_verified: boolean;
+  email_provider: string;
+  smtp_host: string;
+  smtp_port: number;
+  smtp_username: string;
+  smtp_password: string;
+  smtp_verified: boolean;
+}
+
+export interface InfrastructureSettingWrite {
+  company_name?: string;
+  sender_name?: string;
+  sender_email?: string;
+  landing_domain?: string;
+  email_provider?: string;
+  smtp_host?: string;
+  smtp_port?: number;
+  smtp_username?: string;
+  smtp_password?: string;
+}
+
 // Error
 export interface ApiError {
   detail?: string;

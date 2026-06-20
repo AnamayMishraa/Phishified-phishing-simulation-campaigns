@@ -53,6 +53,7 @@ export const routeLabels: Record<string, string> = {
   "/ai-assistant": "AI Assistant",
   "/settings": "Settings",
   "/settings/organization": "Organization Settings",
+  "/settings/infrastructure": "Infrastructure Settings",
 };
 
 export const quickActions: NavItem[] = [
