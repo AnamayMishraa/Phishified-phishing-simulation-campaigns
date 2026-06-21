@@ -90,6 +90,11 @@ export default function EditCampaignPage() {
       return;
     }
 
+    if (campaignType !== "qr_code" && !selectedLandingPage) {
+      toast.error("Landing page is required for this campaign type");
+      return;
+    }
+
     setSaving(true);
     try {
       await api(`/campaigns/${id}/`, {
@@ -276,8 +281,8 @@ export default function EditCampaignPage() {
 
       <div className="border border-default-border bg-surface rounded-xl p-6 space-y-4">
         <div>
-          <h3 className="text-sm font-semibold text-text-primary mb-1">Landing Page</h3>
-          <p className="text-xs text-text-muted">Choose a landing page (optional).</p>
+          <h3 className="text-sm font-semibold text-text-primary mb-1">Landing Page <span className="text-status-danger">*</span></h3>
+          <p className="text-xs text-text-muted">The page users see after clicking the phishing link</p>
         </div>
 
         {campaignType !== "qr_code" && (

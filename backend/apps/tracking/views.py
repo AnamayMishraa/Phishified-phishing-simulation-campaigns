@@ -48,11 +48,11 @@ class ClickTrackingView(View):
             )
             slug = None
 
+        base = settings.FRONTEND_BASE_URL.rstrip("/")
         if slug:
-            base = settings.FRONTEND_BASE_URL.rstrip("/")
             redirect_url = f"{base}/landing/{slug}/?aid={assignment_id}"
         else:
-            redirect_url = "/"
+            redirect_url = f"{base}/"
 
         return HttpResponseRedirect(redirect_url)
 

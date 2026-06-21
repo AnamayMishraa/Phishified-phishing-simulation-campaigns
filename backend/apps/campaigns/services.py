@@ -33,7 +33,12 @@ class CampaignService:
                 f"Email template '{campaign.email_template.name}' is inactive."
             )
 
-        if campaign.landing_page and not campaign.landing_page.is_active:
+        if not campaign.landing_page:
+            raise CampaignLaunchError(
+                "Campaign requires a landing page. Select one before launching."
+            )
+
+        if not campaign.landing_page.is_active:
             raise CampaignLaunchError(
                 f"Landing page '{campaign.landing_page.name}' is inactive."
             )

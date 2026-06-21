@@ -78,7 +78,10 @@ export default function NewCampaignPage() {
   const canNext = () => {
     switch (step) {
       case 1: return name.trim().length > 0;
-      case 2: return campaignType !== "email" || selectedTemplate !== null;
+      case 2:
+        if (campaignType === "email") return selectedTemplate !== null && selectedLandingPage !== null;
+        if (campaignType === "qr_code") return true;
+        return selectedLandingPage !== null;
       case 3: return true;
       default: return true;
     }
@@ -304,7 +307,8 @@ export default function NewCampaignPage() {
 
             {campaignType !== "qr_code" && (
               <div className="space-y-2">
-                <label className="text-xs font-medium text-text-secondary">Landing Page (optional)</label>
+                <label className="text-xs font-medium text-text-secondary">Landing Page <span className="text-status-danger">*</span></label>
+                <p className="text-[10px] text-text-muted -mt-1">The page users see after clicking the phishing link</p>
                 {landingPages.length === 0 ? (
                   <p className="text-xs text-text-muted py-2">No landing pages available</p>
                 ) : (

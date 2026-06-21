@@ -65,20 +65,20 @@ function formatRate(rate: number | null | undefined): string {
   return `${(rate * 100).toFixed(1)}%`;
 }
 
-function funnelOpened(step: string): boolean {
-  return ["opened", "clicked", "submitted", "reported"].includes(step);
+function hasOpened(target: CampaignAssignment): boolean {
+  return !!target.opened_at;
 }
 
-function funnelClicked(step: string): boolean {
-  return ["clicked", "submitted", "reported"].includes(step);
+function hasClicked(target: CampaignAssignment): boolean {
+  return !!target.clicked_at;
 }
 
-function funnelSubmitted(step: string): boolean {
-  return ["submitted", "reported"].includes(step);
+function hasSubmitted(target: CampaignAssignment): boolean {
+  return !!target.submitted_at;
 }
 
-function funnelReported(step: string): boolean {
-  return step === "reported";
+function hasReported(target: CampaignAssignment): boolean {
+  return !!target.reported_at;
 }
 
 function StatCard({
@@ -478,28 +478,28 @@ export default function CampaignDetailPage() {
                       </div>
                     </td>
                     <td className="py-3 pr-4 text-center">
-                      {funnelOpened(target.funnel_step) ? (
+                      {hasOpened(target) ? (
                         <Check className="size-4 text-accent-cyan-light inline" />
                       ) : (
                         <X className="size-4 text-text-muted/40 inline" />
                       )}
                     </td>
                     <td className="py-3 pr-4 text-center">
-                      {funnelClicked(target.funnel_step) ? (
+                      {hasClicked(target) ? (
                         <Check className="size-4 text-status-danger inline" />
                       ) : (
                         <X className="size-4 text-text-muted/40 inline" />
                       )}
                     </td>
                     <td className="py-3 pr-4 text-center">
-                      {funnelSubmitted(target.funnel_step) ? (
+                      {hasSubmitted(target) ? (
                         <Check className="size-4 text-status-warning inline" />
                       ) : (
                         <X className="size-4 text-text-muted/40 inline" />
                       )}
                     </td>
                     <td className="py-3 text-center">
-                      {funnelReported(target.funnel_step) ? (
+                      {hasReported(target) ? (
                         <Check className="size-4 text-status-success inline" />
                       ) : (
                         <X className="size-4 text-text-muted/40 inline" />
