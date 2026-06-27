@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { StepIndicator } from "@/components/ui/step-indicator";
 import { api, ApiError } from "@/lib/api/client";
-import type { Template, LandingPage, PaginatedResponse, CampaignDetail } from "@/lib/api/types";
+import type { Template, LandingPage, PaginatedResponse, CampaignDetail, Department } from "@/lib/api/types";
 import { Send, ArrowRight, Check, ChevronLeft, Users, Calendar, FileText, Loader2, Smartphone, MessageSquare, QrCode } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,16 +26,7 @@ const campaignTypes = [
   { value: "qr_code", label: "QR Code", icon: QrCode },
 ];
 
-const departments = [
-  { value: "", label: "All Departments", count: null },
-  { value: "Engineering", label: "Engineering", count: 240 },
-  { value: "Marketing", label: "Marketing", count: 85 },
-  { value: "Sales", label: "Sales", count: 120 },
-  { value: "Finance", label: "Finance", count: 65 },
-  { value: "HR", label: "HR", count: 45 },
-  { value: "Operations", label: "Operations", count: 95 },
-  { value: "Legal", label: "Legal", count: 30 },
-];
+const allDepartmentsOption = { id: "", name: "All Departments", employee_count: 0, description: "", is_active: true, created_at: "" };
 
 export default function NewCampaignPage() {
   const router = useRouter();
@@ -58,14 +49,17 @@ export default function NewCampaignPage() {
   const [landingPages, setLandingPages] = useState<LandingPage[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(true);
   const [templateSearch, setTemplateSearch] = useState("");
+  const [departments, setDepartments] = useState<Department[]>([]);
 
   useEffect(() => {
     Promise.all([
       api<PaginatedResponse<Template>>("/templates/").catch(() => ({ results: [], count: 0, next: null, previous: null })),
       api<PaginatedResponse<LandingPage>>("/landing-pages/").catch(() => ({ results: [], count: 0, next: null, previous: null })),
-    ]).then(([tplData, lpData]) => {
+      api<{ results: Department[] }>("/organizations/departments/").catch(() => ({ results: [] })),
+    ]).then(([tplData, lpData, deptData]) => {
       setTemplates(tplData.results.filter((t) => t.is_active));
       setLandingPages(lpData.results.filter((lp) => lp.is_active));
+      setDepartments(deptData.results);
     }).finally(() => setTemplatesLoading(false));
   }, []);
 
@@ -351,26 +345,44 @@ export default function NewCampaignPage() {
               <p className="text-xs text-text-muted">Choose which department to target with this campaign.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedDept("")}
+                className={cn(
+                  "text-left border rounded-lg p-4 transition-all",
+                  selectedDept === ""
+                    ? "border-accent-blue/40 bg-accent-blue/5"
+                    : "border-default-border hover:border-accent-blue/20"
+                )}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <h4 className="text-xs font-semibold text-text-primary">All Departments</h4>
+                  {selectedDept === "" && (
+                    <Check className="size-3.5 text-accent-blue-light" />
+                  )}
+                </div>
+                <p className="text-[10px] text-text-muted">All employees</p>
+              </button>
               {departments.map((dept) => (
                 <button
-                  key={dept.value}
+                  key={dept.id}
                   type="button"
-                  onClick={() => setSelectedDept(dept.value)}
+                  onClick={() => setSelectedDept(dept.name)}
                   className={cn(
                     "text-left border rounded-lg p-4 transition-all",
-                    selectedDept === dept.value
+                    selectedDept === dept.name
                       ? "border-accent-blue/40 bg-accent-blue/5"
                       : "border-default-border hover:border-accent-blue/20"
                   )}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="text-xs font-semibold text-text-primary">{dept.label}</h4>
-                    {selectedDept === dept.value && (
+                    <h4 className="text-xs font-semibold text-text-primary">{dept.name}</h4>
+                    {selectedDept === dept.name && (
                       <Check className="size-3.5 text-accent-blue-light" />
                     )}
                   </div>
                   <p className="text-[10px] text-text-muted">
-                    {dept.count ? `${dept.count.toLocaleString()} employees` : "All employees"}
+                    {dept.employee_count} employee{dept.employee_count !== 1 ? "s" : ""}
                   </p>
                 </button>
               ))}

@@ -327,6 +327,242 @@ export interface InfrastructureSettingWrite {
   smtp_password?: string;
 }
 
+// Analytics
+export interface AnalyticsKpiValue {
+  value: number;
+  change: number | null;
+}
+
+export interface AnalyticsKpis {
+  security_awareness_score: AnalyticsKpiValue;
+  open_rate: AnalyticsKpiValue;
+  click_rate: AnalyticsKpiValue;
+  submission_rate: AnalyticsKpiValue;
+  report_rate: AnalyticsKpiValue;
+  avg_report_time_minutes: AnalyticsKpiValue;
+  training_completion_pct: AnalyticsKpiValue;
+}
+
+export interface FunnelStage {
+  stage: string;
+  count: number;
+}
+
+export interface HeatmapDepartment {
+  department: string;
+  low: number;
+  medium: number;
+  high: number;
+  critical: number;
+  total: number;
+  avg_risk: number;
+}
+
+export interface RiskTrendPoint {
+  date: string;
+  avg_risk: number;
+}
+
+export interface DeptComparison {
+  department: string;
+  open_rate: number;
+  click_rate: number;
+  submission_rate: number;
+  report_rate: number;
+  sent: number;
+}
+
+export interface TrainingGroup {
+  employee_count: number;
+  avg_risk_score: number;
+  click_rate: number;
+}
+
+export interface TrainingImpact {
+  trained: TrainingGroup;
+  untrained: TrainingGroup;
+  risk_reduction: number;
+}
+
+export interface RiskSegmentation {
+  low: number;
+  medium: number;
+  high: number;
+  critical: number;
+}
+
+export interface RiskOverview {
+  segmentation: RiskSegmentation;
+  total_employees: number;
+}
+
+export interface VulnerableEmployee {
+  id: string;
+  name: string;
+  department: string;
+  risk_score: number;
+  risk_level: string;
+  total_phish_clicked: number;
+}
+
+export interface ImprovedEmployee {
+  id: string;
+  name: string;
+  department: string;
+  risk_score: number;
+  previous_risk_score: number;
+  improvement: number;
+}
+
+export interface FastestReporter {
+  id: string;
+  name: string;
+  department: string;
+  report_time_minutes: number;
+  campaign: string;
+}
+
+export interface HighRiskDepartment {
+  department: string;
+  avg_risk: number;
+  employee_count: number;
+  high_risk_count: number;
+}
+
+export interface ExecutiveSummary {
+  awareness_score: number;
+  risk_assessment: string;
+  findings: string[];
+  recommendations: string[];
+  generated_at: string;
+}
+
+export interface AnalyticsAllData {
+  kpis: AnalyticsKpis;
+  funnel: FunnelStage[];
+  heatmap: HeatmapDepartment[];
+  risk_trend: RiskTrendPoint[];
+  department_comparison: DeptComparison[];
+  training_impact: TrainingImpact;
+  risk_overview: RiskOverview;
+  most_vulnerable: VulnerableEmployee[];
+  most_improved: ImprovedEmployee[];
+  fastest_reporters: FastestReporter[];
+  highest_risk_departments: HighRiskDepartment[];
+  executive_summary: ExecutiveSummary;
+}
+
+export interface AnalyticsFilterOption {
+  id: string;
+  name: string;
+}
+
+export interface AnalyticsFilters {
+  campaigns: AnalyticsFilterOption[];
+  departments: AnalyticsFilterOption[];
+}
+
+// Departments
+export interface Department {
+  id: string;
+  name: string;
+  description: string;
+  employee_count: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+// Training
+export interface CourseModuleAPI {
+  id: string;
+  title: string;
+  description: string;
+  content_type: string;
+  duration_minutes: number;
+  order: number;
+}
+
+export interface CourseListItem {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  category_display: string;
+  difficulty_level: string;
+  difficulty_display: string;
+  is_active: boolean;
+  total_modules: number;
+  total_duration_minutes: number;
+  enrollment_count: number;
+  completed_count: number;
+  created_at: string;
+}
+
+export interface CourseDetail extends CourseListItem {
+  organization_id: string;
+  modules: CourseModuleAPI[];
+  updated_at: string;
+}
+
+// Reports
+export interface ReportMetric {
+  campaignsRun: number;
+  employeesTested: number;
+  avgClickRate: string;
+  avgReportRate: string;
+  highRiskEmployees: number;
+  trainingsCompleted: number;
+}
+
+export interface ReportListItem {
+  id: string;
+  name: string;
+  description: string;
+  format: string;
+  file_size: string;
+  pages: number;
+  status: string;
+  generated_by_name: string;
+  generated_at: string;
+}
+
+export interface ReportDetail {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string;
+  format: string;
+  file_size: string;
+  pages: number;
+  status: string;
+  generated_by: string | null;
+  generated_by_name: string;
+  generated_at: string;
+  metrics: ReportMetric;
+  campaigns: ReportCampaignSummary[];
+  departments: ReportDepartmentSummary[];
+}
+
+export interface ReportCampaignSummary {
+  id: string;
+  name: string;
+  department: string;
+  employees: number;
+  clicks: number;
+  clickRate: string;
+  reports: number;
+  reportRate: string;
+}
+
+export interface ReportDepartmentSummary {
+  name: string;
+  employees: number;
+  riskScore: number;
+  clickRate: string;
+  reportRate: string;
+  trainingsCompleted: number;
+}
+
 // Error
 export interface ApiError {
   detail?: string;

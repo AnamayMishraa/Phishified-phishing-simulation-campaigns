@@ -1,16 +1,28 @@
+import os
+
 from .base import *
 
 DEBUG = False
-SECRET_KEY = env.str("DJANGO_SECRET_KEY")
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
-DATABASES = {"default": env.db_url("DATABASE_URL")}
-CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[]) + [FRONTEND_BASE_URL]
+SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",") if os.environ.get("ALLOWED_HOSTS") else []
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("POSTGRES_DB", "phishified"),
+        "USER": os.environ.get("POSTGRES_USER", "phishified"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
+        "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
+        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+    }
+}
+cors_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+CORS_ALLOWED_ORIGINS = [o.strip() for o in cors_origins.split(",") if o.strip()] + [FRONTEND_BASE_URL]
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = env.str("EMAIL_HOST")
-EMAIL_PORT = env.int("EMAIL_PORT", default=587)
-EMAIL_HOST_USER = env.str("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = env.str("EMAIL_HOST_PASSWORD")
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = True
 
 SECURE_SSL_REDIRECT = True
@@ -22,5 +34,5 @@ SECURE_HSTS_PRELOAD = True
 
 CELERY_TASK_ALWAYS_EAGER = False
 
-PHISHIFIED_BASE_URL = env.str("PHISHIFIED_BASE_URL")
-FRONTEND_BASE_URL = env.str("FRONTEND_BASE_URL")
+PHISHIFIED_BASE_URL = os.environ.get("PHISHIFIED_BASE_URL", PHISHIFIED_BASE_URL)
+FRONTEND_BASE_URL = os.environ.get("FRONTEND_BASE_URL", FRONTEND_BASE_URL)

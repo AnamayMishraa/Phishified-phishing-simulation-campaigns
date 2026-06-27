@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { Star, Plus } from "lucide-react";
-import { api, ApiError } from "@/lib/api/client";
+import { api, ApiError, getErrorMessage } from "@/lib/api/client";
 import type { Template, PaginatedResponse } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +28,7 @@ export default function TemplatesPage() {
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setError(err instanceof ApiError ? String(err.body ?? err.message) : "Failed to load templates");
+          setError(err instanceof ApiError ? getErrorMessage(err) : "Failed to load templates");
         }
       })
       .finally(() => {
@@ -113,7 +113,7 @@ export default function TemplatesPage() {
               setLoading(true);
               api<PaginatedResponse<Template>>("/templates/")
                 .then((data) => setTemplates(data.results))
-                .catch((err: unknown) => setError(err instanceof ApiError ? String(err.body ?? err.message) : "Failed to load"))
+                .catch((err: unknown) => setError(err instanceof ApiError ? getErrorMessage(err) : "Failed to load"))
                 .finally(() => setLoading(false));
             }}
             className="ml-2 underline hover:no-underline"

@@ -101,6 +101,9 @@ export default function EmployeesPage() {
         description="Manage employees, view risk assessments, and import team members"
         actions={
           <div className="flex gap-2">
+            <Link href="/employees/new">
+              <Button className="bg-accent-blue hover:bg-accent-blue-dim text-white flex items-center gap-2">Add Employee</Button>
+            </Link>
             <Link href="/employees/leaderboard">
               <Button variant="outline" className="flex items-center gap-2">Leaderboard</Button>
             </Link>

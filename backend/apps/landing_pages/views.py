@@ -32,6 +32,9 @@ class LandingPageViewSet(viewsets.ModelViewSet):
             organization=self.request.user.organization
         )
 
+        if self.action == "list":
+            qs = qs.filter(is_active=True)
+
         category = self.request.query_params.get("category")
         if category:
             qs = qs.filter(category=category)

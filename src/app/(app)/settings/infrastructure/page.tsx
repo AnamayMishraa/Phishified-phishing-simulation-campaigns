@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { api, ApiError } from "@/lib/api/client";
+import { api, ApiError, getErrorMessage } from "@/lib/api/client";
 import type { InfrastructureSetting, InfrastructureSettingWrite } from "@/lib/api/types";
 import {
   CheckCircle2, XCircle, Loader2, Mail, Globe, Server,
@@ -124,7 +124,7 @@ export default function InfrastructureSettingsPage() {
       setSettings(updated);
       setSaveMessage({ type: "success", text: "Settings saved successfully." });
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? String(err.body ?? err.message) : "Failed to save settings.";
+      const msg = err instanceof ApiError ? getErrorMessage(err) : "Failed to save settings.";
       setSaveMessage({ type: "error", text: msg });
     } finally {
       setSaving(false);
@@ -141,7 +141,7 @@ export default function InfrastructureSettingsPage() {
       setSaveMessage({ type: "success", text: data.detail });
       if (settings) setSettings({ ...settings, smtp_verified: true });
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? String(err.body ?? err.message) : "Verification failed.";
+      const msg = err instanceof ApiError ? getErrorMessage(err) : "Verification failed.";
       setSaveMessage({ type: "error", text: msg });
     } finally {
       setVerifySmtpLoading(false);
@@ -158,7 +158,7 @@ export default function InfrastructureSettingsPage() {
       );
       setSaveMessage({ type: "success", text: data.detail });
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? String(err.body ?? err.message) : "Failed to send test email.";
+      const msg = err instanceof ApiError ? getErrorMessage(err) : "Failed to send test email.";
       setSaveMessage({ type: "error", text: msg });
     } finally {
       setTestSending(false);
@@ -176,7 +176,7 @@ export default function InfrastructureSettingsPage() {
       setSaveMessage({ type: "success", text: data.detail });
       if (settings) setSettings({ ...settings, landing_domain_verified: true });
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? String(err.body ?? err.message) : "Domain validation failed.";
+      const msg = err instanceof ApiError ? getErrorMessage(err) : "Domain validation failed.";
       setSaveMessage({ type: "error", text: msg });
       if (settings) setSettings({ ...settings, landing_domain_verified: false });
     } finally {

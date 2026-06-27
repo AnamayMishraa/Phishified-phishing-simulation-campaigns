@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { API_URL } from "@/lib/api/client";
 
 interface LandingPageData {
   name: string;
@@ -10,7 +11,23 @@ interface LandingPageData {
   css_content: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+// Derive the Django root from API_URL by stripping /api/v1
+const DJANGO_BASE_URL = API_URL.replace(/\/api\/v1\/?$/, "");
+
+function collectFieldNames(root: HTMLElement, source?: EventTarget | null): string[] {
+  if (source) {
+    const form = (source as HTMLElement).closest("form");
+    if (form) {
+      return [...(form as HTMLFormElement).elements]
+        .filter((el) => (el as HTMLInputElement).name && (el as HTMLInputElement).type !== "submit")
+        .map((el) => (el as HTMLInputElement).name);
+    }
+  }
+
+  return [...root.querySelectorAll<HTMLInputElement>("input[name], select[name], textarea[name]")]
+    .filter((el) => el.type !== "submit")
+    .map((el) => el.name);
+}
 
 export default function LandingSlugPage({ params }: { params: Promise<{ slug: string }> }) {
   const [slug, setSlug] = useState<string | null>(null);
@@ -18,8 +35,8 @@ export default function LandingSlugPage({ params }: { params: Promise<{ slug: st
   const [page, setPage] = useState<LandingPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     params.then((p) => setSlug(p.slug));
@@ -32,7 +49,7 @@ export default function LandingSlugPage({ params }: { params: Promise<{ slug: st
 
   useEffect(() => {
     if (!slug) return;
-    fetch(`${API_BASE}/api/v1/public/pages/${slug}/`)
+      fetch(`${DJANGO_BASE_URL}/api/v1/public/pages/${slug}/`)
       .then((res) => {
         if (!res.ok) throw new Error("Page not found");
         return res.json();
@@ -45,52 +62,75 @@ export default function LandingSlugPage({ params }: { params: Promise<{ slug: st
   useEffect(() => {
     if (!page || !contentRef.current || !aid) return;
 
-    const forms = contentRef.current.querySelectorAll("form");
-    const handlers: Array<[HTMLFormElement, (e: Event) => void]> = [];
+    const root = contentRef.current;
 
+    const submitCredentials = async (source?: EventTarget | null) => {
+      if (submittingRef.current) return;
+      submittingRef.current = true;
+
+      const fieldNames = collectFieldNames(root, source);
+
+      try {
+        const res = await fetch(`${DJANGO_BASE_URL}/api/v1/track/submit/${aid}/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ submitted_fields: fieldNames }),
+        });
+
+        if (res.redirected) {
+          window.location.href = res.url;
+        } else {
+          const data = await res.json();
+          window.location.href = data.redirect_url || "/completion/";
+        }
+      } catch {
+        window.location.href = "/completion/";
+      }
+    };
+
+    const cleanup: (() => void)[] = [];
+
+    const forms = root.querySelectorAll("form");
+    const formHandler = (e: Event) => {
+      e.preventDefault();
+      submitCredentials(e.target);
+    };
     forms.forEach((form) => {
-      const handler = async (e: Event) => {
-        e.preventDefault();
-        if (submitting) return;
-        setSubmitting(true);
+      form.addEventListener("submit", formHandler);
+      cleanup.push(() => form.removeEventListener("submit", formHandler));
+    });
 
-        const fieldNames: string[] = [];
-        const elements = (e.target as HTMLFormElement).elements;
-        for (let i = 0; i < elements.length; i++) {
-          const el = elements[i] as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
-          if (el.name && el.type !== "submit") {
-            fieldNames.push(el.name);
-          }
-        }
+    const buttons = root.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
+      'button[type="submit"], input[type="submit"], button:not([type])'
+    );
+    const clickHandler = (e: Event) => {
+      if ((e.currentTarget as HTMLElement).closest("form")) return;
+      e.preventDefault();
+      submitCredentials(e.currentTarget);
+    };
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", clickHandler);
+      cleanup.push(() => btn.removeEventListener("click", clickHandler));
+    });
 
-        try {
-          const res = await fetch(`${API_BASE}/api/v1/track/submit/${aid}/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ submitted_fields: fieldNames }),
-          });
-
-          if (res.redirected) {
-            window.location.href = res.url;
-          } else {
-            const data = await res.json();
-            window.location.href = data.redirect_url || "/completion/";
-          }
-        } catch {
-          window.location.href = "/completion/";
-        }
-      };
-
-      form.addEventListener("submit", handler);
-      handlers.push([form, handler]);
+    const inputs = root.querySelectorAll<HTMLInputElement>(
+      'input[type="email"], input[type="password"], input[name="email"], input[name="password"], input[name="username"]'
+    );
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+      if ((e.currentTarget as HTMLElement).closest("form")) return;
+      e.preventDefault();
+      submitCredentials(e.currentTarget);
+    };
+    inputs.forEach((input) => {
+      input.addEventListener("keydown", keyHandler);
+      cleanup.push(() => input.removeEventListener("keydown", keyHandler));
     });
 
     return () => {
-      handlers.forEach(([form, handler]) => {
-        form.removeEventListener("submit", handler);
-      });
+      cleanup.forEach((fn) => fn());
     };
-  }, [page, aid, submitting]);
+  }, [page, aid]);
 
   if (loading) {
     return (

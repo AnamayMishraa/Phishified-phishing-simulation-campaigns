@@ -5,14 +5,14 @@ import socket
 from django.conf import settings
 from django.core.mail import get_connection
 from django.core.mail.message import EmailMessage
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.organizations.crypto import decrypt_value
-from apps.organizations.models import InfrastructureSetting
-from apps.organizations.serializers import InfrastructureSettingSerializer
+from apps.organizations.models import Department, InfrastructureSetting
+from apps.organizations.serializers import DepartmentSerializer, InfrastructureSettingSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -257,3 +257,22 @@ class ValidateDomainView(APIView):
                     {"detail": f"Domain {domain} could not be resolved."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+
+
+class DepartmentViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = DepartmentSerializer
+
+    def get_queryset(self):
+        qs = Department.objects.filter(
+            organization=self.request.user.organization,
+        ).order_by("name")
+
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(name__icontains=search)
+
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(organization=self.request.user.organization)

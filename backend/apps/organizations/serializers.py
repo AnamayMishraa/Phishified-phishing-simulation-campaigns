@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.organizations.crypto import decrypt_value, encrypt_value
-from apps.organizations.models import InfrastructureSetting
+from apps.organizations.models import Department, InfrastructureSetting
 
 
 class InfrastructureSettingSerializer(serializers.ModelSerializer):
@@ -55,6 +55,25 @@ class InfrastructureSettingSerializer(serializers.ModelSerializer):
         if raw_password:
             validated_data["smtp_password_enc"] = encrypt_value(raw_password)
         return super().create(validated_data)
+
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    employee_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Department
+        fields = [
+            "id",
+            "name",
+            "description",
+            "employee_count",
+            "is_active",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+    def get_employee_count(self, obj):
+        return obj.employees.filter(is_active=True).count()
 
 
 

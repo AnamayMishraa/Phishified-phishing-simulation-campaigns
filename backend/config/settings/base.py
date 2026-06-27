@@ -1,3 +1,4 @@
+import os
 from datetime import timedelta
 
 from pathlib import Path
@@ -6,6 +7,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SECRET_KEY = "django-insecure-change-me-to-a-long-secret-key-min-32-bytes"
 DEBUG = False
 ALLOWED_HOSTS: list[str] = []
+
+PHISHIFIED_BASE_URL = os.environ.get("PHISHIFIED_BASE_URL", "http://localhost:8000")
+FRONTEND_BASE_URL = os.environ.get("FRONTEND_BASE_URL", "http://localhost:3000")
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 AUTH_USER_MODEL = "accounts.User"
@@ -35,6 +39,7 @@ INSTALLED_APPS = [
     "apps.reports",
     "apps.audit",
     "apps.notifications",
+    "apps.analytics",
     "apps.dashboard",
     "apps.tracking",
     "apps.email",
@@ -117,15 +122,13 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOWED_ORIGINS: list[str] = [
-    "http://localhost:3000",
+    FRONTEND_BASE_URL,
 ]
 
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 
-DEFAULT_FROM_EMAIL = "noreply@phishified.local"
-PHISHIFIED_BASE_URL = "http://localhost:3000"
-FRONTEND_BASE_URL = "http://localhost:3000"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@phishified.local")

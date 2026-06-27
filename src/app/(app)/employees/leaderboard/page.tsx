@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { cn } from "@/lib/utils";
-import { api, ApiError } from "@/lib/api/client";
+import { api, ApiError, getErrorMessage } from "@/lib/api/client";
 import type { LeaderboardEntry, PaginatedResponse } from "@/lib/api/types";
 import { ArrowUpDown } from "lucide-react";
 
@@ -55,7 +55,7 @@ export default function LeaderboardPage() {
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setError(err instanceof ApiError ? String(err.body ?? err.message) : "Failed to load leaderboard");
+          setError(getErrorMessage(err, "Failed to load leaderboard"));
         }
       })
       .finally(() => {

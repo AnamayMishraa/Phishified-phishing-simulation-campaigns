@@ -6,7 +6,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { Pagination } from "@/components/ui/pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Play, Pause, MoreHorizontal, ArrowUpDown } from "lucide-react";
-import { api, ApiError } from "@/lib/api/client";
+import { api, ApiError, getErrorMessage } from "@/lib/api/client";
 import type { Campaign, PaginatedResponse } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
@@ -51,7 +51,7 @@ export function CampaignList() {
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setError(err instanceof ApiError ? String(err.body ?? err.message) : "Failed to load campaigns");
+          setError(err instanceof ApiError ? getErrorMessage(err) : "Failed to load campaigns");
         }
       })
       .finally(() => {
@@ -179,7 +179,7 @@ export function CampaignList() {
               setLoading(true);
               api<PaginatedResponse<Campaign>>("/campaigns/")
                 .then((data) => setCampaigns(data.results))
-                .catch((err: unknown) => setError(err instanceof ApiError ? String(err.body ?? err.message) : "Failed to load"))
+                .catch((err: unknown) => setError(err instanceof ApiError ? getErrorMessage(err) : "Failed to load"))
                 .finally(() => setLoading(false));
             }}
             className="ml-2 underline hover:no-underline"

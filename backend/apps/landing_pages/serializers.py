@@ -68,3 +68,16 @@ class LandingPageWriteSerializer(serializers.ModelSerializer):
             "is_active",
         ]
         read_only_fields = ["id"]
+
+    def validate_slug(self, value):
+        request = self.context.get("request")
+        if request and hasattr(request.user, "organization") and request.user.organization:
+            org = request.user.organization
+            qs = LandingPage.objects.filter(organization=org, slug=value)
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise serializers.ValidationError(
+                    f"A landing page with slug '{value}' already exists for this organization."
+                )
+        return value

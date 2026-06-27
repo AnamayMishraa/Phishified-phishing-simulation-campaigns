@@ -1,23 +1,38 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { Pagination } from "@/components/ui/pagination";
 import { FileText, Download, Calendar, ArrowUpDown } from "lucide-react";
-import { reports } from "@/data/reports";
 import { cn } from "@/lib/utils";
+import { api, ApiError, getErrorMessage } from "@/lib/api/client";
+import type { ReportListItem } from "@/lib/api/types";
 
 const statusFilters = ["All", "Generated", "Archived", "Generating"] as const;
 
 export default function ReportsPage() {
+  const [reports, setReports] = useState<ReportListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [sortAsc, setSortAsc] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const perPage = 6;
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    api<{ results: ReportListItem[] }>("/reports/")
+      .then((d) => setReports(d.results))
+      .catch((err: unknown) => {
+        setError(err instanceof ApiError ? getErrorMessage(err, "Failed to load reports") : "Failed to load reports");
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(() => {
     let result = [...reports];
@@ -32,13 +47,13 @@ export default function ReportsPage() {
     }
 
     result.sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
+      const dateA = new Date(a.generated_at).getTime();
+      const dateB = new Date(b.generated_at).getTime();
       return sortAsc ? dateA - dateB : dateB - dateA;
     });
 
     return result;
-  }, [search, statusFilter, sortAsc]);
+  }, [search, statusFilter, sortAsc, reports]);
 
   const totalPages = Math.ceil(filtered.length / perPage);
   const paged = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
@@ -60,6 +75,10 @@ export default function ReportsPage() {
           </Button>
         }
       />
+
+      {error && (
+        <div className="border border-status-danger/20 bg-status-danger/5 rounded-xl p-4 text-sm text-status-danger">{error}</div>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="w-full sm:w-64">
@@ -91,48 +110,65 @@ export default function ReportsPage() {
 
       <p className="text-[11px] text-text-muted">
         {filtered.length} report{filtered.length !== 1 ? "s" : ""}
-        {filtered.length !== reports.length && ` (filtered from ${reports.length})`}
+        {filtered.length !== reports.length && !loading && ` (filtered from ${reports.length})`}
       </p>
 
-      <div className="grid grid-cols-1 gap-3">
-        {paged.map((report) => (
-          <Link key={report.id} href={`/reports/${report.id}`}>
-            <div className="flex items-center justify-between p-4 border border-default-border bg-surface rounded-xl hover:border-accent-blue/20 transition-all duration-200">
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center justify-between p-4 border border-default-border bg-surface rounded-xl animate-pulse">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center size-10 rounded-lg bg-accent-blue/10 shrink-0">
-                  <FileText className="size-5 text-accent-blue-light" />
+                <div className="size-10 rounded-lg bg-void" />
+                <div className="space-y-2">
+                  <div className="h-3 w-48 bg-void rounded" />
+                  <div className="h-2 w-64 bg-void rounded" />
                 </div>
-                <div>
-                  <h4 className="text-xs font-semibold text-text-primary">{report.name}</h4>
-                  <p className="text-[10px] text-text-muted mt-0.5 line-clamp-1">{report.description}</p>
-                  <div className="flex items-center gap-2 text-[10px] text-text-muted mt-1">
-                    <span>{report.format}</span>
-                    <span>•</span>
-                    <span>{report.size}</span>
-                    <span>•</span>
-                    <span>{report.pages} pages</span>
-                    <span>•</span>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="size-3" />
-                      <span>{report.date}</span>
+              </div>
+              <div className="h-5 w-16 bg-void rounded" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-3">
+          {paged.map((report) => (
+            <Link key={report.id} href={`/reports/${report.id}`}>
+              <div className="flex items-center justify-between p-4 border border-default-border bg-surface rounded-xl hover:border-accent-blue/20 transition-all duration-200">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center size-10 rounded-lg bg-accent-blue/10 shrink-0">
+                    <FileText className="size-5 text-accent-blue-light" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-semibold text-text-primary">{report.name}</h4>
+                    <p className="text-[10px] text-text-muted mt-0.5 line-clamp-1">{report.description}</p>
+                    <div className="flex items-center gap-2 text-[10px] text-text-muted mt-1">
+                      <span>{report.format}</span>
+                      <span>•</span>
+                      <span>{report.file_size}</span>
+                      <span>•</span>
+                      <span>{report.pages} pages</span>
+                      <span>•</span>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="size-3" />
+                        <span>{report.generated_at?.split("T")[0]}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={cn("text-[10px] font-medium border rounded px-1.5 py-0.5", statusColors[report.status] || "")}>
+                    {report.status}
+                  </span>
+                  <button className="flex items-center justify-center size-8 rounded-lg border border-default-border bg-surface text-text-muted hover:text-text-primary hover:border-accent-blue/30 transition-all">
+                    <Download className="size-3.5" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className={cn("text-[10px] font-medium border rounded px-1.5 py-0.5", statusColors[report.status])}>
-                  {report.status}
-                </span>
-                <button className="flex items-center justify-center size-8 rounded-lg border border-default-border bg-surface text-text-muted hover:text-text-primary hover:border-accent-blue/30 transition-all">
-                  <Download className="size-3.5" />
-                </button>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
+            </Link>
+          ))}
+        </div>
+      )}
 
-      {paged.length === 0 && (
+      {paged.length === 0 && !loading && (
         <div className="text-center py-12 border border-dashed border-default-border rounded-xl">
           <p className="text-sm text-text-muted">No reports match your filters</p>
           <button onClick={() => { setSearch(""); setStatusFilter("All"); }} className="mt-2 text-xs text-accent-blue-light hover:underline">
@@ -141,7 +177,7 @@ export default function ReportsPage() {
         </div>
       )}
 
-      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+      {!loading && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />}
     </div>
   );
 }

@@ -17,7 +17,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { api, ApiError } from "@/lib/api/client";
+import { api, ApiError, apiUrl } from "@/lib/api/client";
 import type { CampaignDetail, CampaignAssignment, CampaignActivity as ApiActivity, PaginatedResponse } from "@/lib/api/types";
 import {
   ArrowLeft,
@@ -124,7 +124,7 @@ export default function CampaignDetailPage() {
     setExportingCsv(true);
     try {
       const token = localStorage.getItem("access_token");
-      const url = `http://localhost:8000/api/v1/campaigns/${id}/export-csv/`;
+      const url = apiUrl(`/campaigns/${id}/export-csv/`);
       const res = await fetch(url, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });

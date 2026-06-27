@@ -10,8 +10,9 @@ import {
   Dialog, DialogTrigger, DialogContent, DialogHeader,
   DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
-import { api, ApiError } from "@/lib/api/client";
+import { api, ApiError, getErrorMessage } from "@/lib/api/client";
 import type { LandingPageDetail as LandingPageDetailType } from "@/lib/api/types";
+import { PagePreviewRenderer } from "@/components/landing-pages/live-preview";
 import {
   ArrowLeft, Eye, Globe, Edit, Trash2,
   User, Calendar, Clock, Activity, Loader2,
@@ -43,7 +44,7 @@ export default function LandingPageDetailPage() {
       .then((data) => { if (!cancelled) setPage(data); })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setError(err instanceof ApiError ? String(err.body ?? err.message) : "Failed to load landing page");
+          setError(getErrorMessage(err, "Failed to load landing page"));
         }
       })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -182,8 +183,8 @@ export default function LandingPageDetailPage() {
             <h3 className="text-sm font-semibold text-text-primary">Page Preview</h3>
             <span className="text-[10px] text-text-muted">{categoryLabels[page.category] || page.category}</span>
           </div>
-          <div className="bg-white rounded-lg p-6 min-h-[320px] flex items-center justify-center overflow-x-auto">
-            <div dangerouslySetInnerHTML={{ __html: page.html_content }} />
+          <div className="bg-white rounded-lg min-h-[320px] overflow-x-auto">
+            <PagePreviewRenderer htmlContent={page.html_content} cssContent={page.css_content} />
           </div>
         </div>
 

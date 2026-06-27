@@ -5,7 +5,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
-import { api, ApiError } from "@/lib/api/client";
+import { api, ApiError, getErrorMessage } from "@/lib/api/client";
 import type { LandingPage, PaginatedResponse } from "@/lib/api/types";
 import { Plus, Globe, ArrowUpDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,7 @@ export default function LandingPagesPage() {
       .then((res) => { if (!cancelled) setPages(res.results); })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setError(err instanceof ApiError ? String(err.body ?? err.message) : "Failed to load landing pages");
+          setError(getErrorMessage(err, "Failed to load landing pages"));
         }
       })
       .finally(() => { if (!cancelled) setLoading(false); });

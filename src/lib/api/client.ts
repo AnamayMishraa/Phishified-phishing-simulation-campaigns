@@ -1,6 +1,6 @@
-const BASE_URL = "http://localhost:8000/api/v1";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
-const TOKEN_REFRESH_URL = `${BASE_URL}/auth/refresh/`;
+const TOKEN_REFRESH_URL = `${API_URL}/auth/refresh/`;
 
 function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -84,7 +84,7 @@ interface RequestOptions {
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, params, skipAuth = false } = options;
 
-  const url = new URL(`${BASE_URL}${path}`);
+  const url = new URL(`${API_URL}${path}`);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined) url.searchParams.set(key, value);
@@ -134,6 +134,28 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   return res.json() as Promise<T>;
 }
 
+export function getErrorMessage(err: unknown, fallback = "An unexpected error occurred"): string {
+  if (err instanceof ApiError) {
+    const body = err.body;
+    if (typeof body === "string") return body;
+    if (body && typeof body === "object") {
+      const obj = body as Record<string, unknown>;
+      if (typeof obj.detail === "string") return obj.detail;
+      if (Array.isArray(obj.non_field_errors)) {
+        return obj.non_field_errors.join("; ");
+      }
+      try {
+        return JSON.stringify(obj);
+      } catch {
+        return fallback;
+      }
+    }
+    return err.message;
+  }
+  if (err instanceof Error) return err.message;
+  return fallback;
+}
+
 export function apiUrl(path: string): string {
-  return `${BASE_URL}${path}`;
+  return `${API_URL}${path}`;
 }

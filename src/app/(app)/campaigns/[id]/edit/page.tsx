@@ -6,7 +6,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { api, ApiError } from "@/lib/api/client";
+import { api, ApiError, getErrorMessage } from "@/lib/api/client";
 import type { CampaignDetail, Template, LandingPage, PaginatedResponse } from "@/lib/api/types";
 import { ArrowLeft, Send, MessageSquare, Smartphone, QrCode, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -74,7 +74,7 @@ export default function EditCampaignPage() {
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setFetchError(err instanceof ApiError ? String(err.body ?? err.message) : "Failed to load campaign");
+          setFetchError(getErrorMessage(err, "Failed to load campaign"));
         }
       })
       .finally(() => {
