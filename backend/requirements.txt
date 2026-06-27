@@ -12,3 +12,4 @@ dj-database-url>=2.3,<4
 cryptography>=35,<47
 reportlab>=4.0,<6
 dnspython>=2.0,<3
+whitenoise>=6.8.0
