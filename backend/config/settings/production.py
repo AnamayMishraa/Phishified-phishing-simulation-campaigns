@@ -9,6 +9,13 @@ SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",") if os.environ.get("ALLOWED_HOSTS") else []
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_URL = "/static/"
+
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 database_url = os.environ.get("DATABASE_URL")
 if database_url:
