@@ -8,6 +8,8 @@ DEBUG = False
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",") if os.environ.get("ALLOWED_HOSTS") else []
 
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
 database_url = os.environ.get("DATABASE_URL")
 if database_url:
     DATABASES = {"default": dj_database_url.parse(database_url, conn_max_age=600)}
